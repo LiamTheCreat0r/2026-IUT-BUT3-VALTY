@@ -167,6 +167,9 @@ attendu n'est pas spécifié.
 
 1. Écrire le **code minimal** qui fait passer le test. Rien de plus :
    pas de généralisation anticipée, pas de cas non testés « au passage ».
+   Tout surplus (même « par courtoisie », comme un message d'erreur
+   signifiant quand le test n'exige que `toThrow()`) est du code non
+   testé — il sera détecté par le **mutation testing** (voir plus bas).
 2. Exécuter **toute la suite** : le nouveau test passe, aucune régression.
 3. Si un autre test casse : c'est du feedback — comprendre avant de corriger.
 
@@ -191,6 +194,37 @@ une **conclusion explicite après revue**, jamais un saut silencieux.
 Puis — et seulement une fois la revue faite et le harnais toujours vert —
 retour en **Phase 0/1** pour le comportement suivant, jusqu'à épuisement de
 la liste.
+
+## Mutation testing : le vérificateur mécanique de GREEN
+
+La minimalité de GREEN (« code minimal, rien de plus ») est la seule
+contrainte de la boucle sans contrôle mécanique : RED est vérifié par
+l'exécution du test, REFACTOR par la checklist `clean-code` — GREEN ne
+repose que sur la discipline de l'agent. Le **mutation testing** (Stryker
+en TS/JS) ferme cette boucle : il mute le code de production et vérifie
+qu'au moins un test échoue. **Un mutant survivant = un morceau de code de
+production qu'aucun test n'exige** — la définition exacte de ce que la
+règle d'or n°1 interdit.
+
+**Quand le lancer** : en fin de story (ou avant un merge), pas à chaque
+cycle — son coût d'exécution croît avec le projet.
+
+**⚠ La cible n'est PAS un score de 100%** — c'est « **aucun survivant non
+justifié** ». Chaque mutant survivant reçoit un verdict explicite, jamais
+un silence :
+
+| Verdict sur le mutant survivant | Niveau responsable | Action |
+|---|---|---|
+| Le code muté est du surplus jamais exigé par un test | GREEN a trop écrit | Supprimer le surplus (revenir au code minimal) |
+| Le comportement est voulu mais l'assertion trop faible (ex. `toThrow()` nu qui accepte n'importe quelle exception) | Test | Renforcer l'assertion : type d'erreur, valeur exacte, invariant |
+| Le détail muté est hors contrat (non spécifié — ex. texte d'un message d'erreur) | Spécification | **Escalade ou acceptation consignée** dans le journal de décisions : le figer dans un test verrouillerait un détail que personne n'a décidé |
+| Mutant équivalent (ne change pas le comportement observable) | Bruit | Le marquer comme tel et passer — ne pas s'acharner |
+
+**Interdits :**
+- tuer un mutant en verrouillant un détail non spécifié « pour faire
+  monter le score » ;
+- ignorer silencieusement un survivant sans verdict ;
+- viser 100% comme une fin en soi.
 
 ## Escalade spécification (supervision humaine)
 
