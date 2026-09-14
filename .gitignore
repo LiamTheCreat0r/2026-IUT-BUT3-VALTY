@@ -10,3 +10,7 @@
 node_modules/
 dist/
 coverage/
+
+# Générations Marp
+cours/*.html
+cours/*.pdf

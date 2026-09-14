@@ -1,0 +1,44 @@
+/* @theme course */
+
+@import 'default';
+
+/*
+ * Ergonomie : marges verticales réduites, SANS toucher à la taille du texte.
+ * Si une slide ne rentre toujours pas, il faut la diviser (pas rétrécir).
+ */
+section {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+/* Espace vertical réduit entre les blocs (pas la taille du texte) */
+section :is(h1, h2, h3, h4) {
+  margin-top: 0.4em;
+  margin-bottom: 0.3em;
+}
+
+section p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+section ul,
+section ol {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
+section li {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+section pre {
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+
+section blockquote {
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}

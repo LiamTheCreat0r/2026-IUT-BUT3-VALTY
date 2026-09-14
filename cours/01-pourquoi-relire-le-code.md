@@ -1,390 +1,265 @@
+---
+marp: true
+theme: course
+---
+
 # Module 1 — Pourquoi relire le code ?
 
-> **Objectifs du module.** À la fin de cette séance, vous saurez :
->
-> - définir ce qu'est une revue de code et citer ses principales formes ;
-> - argumenter, chiffres à l'appui, pourquoi la revue de code est une pratique
->   indispensable en programmation logicielle ;
-> - distinguer l'auto-revue (se relire soi-même) de la revue d'équipe (relire
->   le code des autres) et expliquer leurs enjeux respectifs ;
-> - utiliser le vocabulaire de base : *pull request*, *diff*, *reviewer*,
->   *approve*, *request changes*, commentaire en ligne ;
-> - adopter les attitudes de base d'un bon relecteur.
+**Revue de code — Programmation logicielle** · Bachelor informatique · TypeScript
+
+À la fin de cette séance, vous saurez :
+
+- définir ce qu'est une revue de code et citer ses formes ;
+- argumenter son importance, chiffres à l'appui ;
+- distinguer **auto-revue** et **revue d'équipe** ;
+- utiliser le vocabulaire de base (PR, diff, reviewer…) ;
+- adopter les attitudes d'un bon relecteur.
 
 ---
 
 ## 1. Mise en situation
 
-Vous venez d'écrire cette fonction TypeScript. Elle compile. Elle passe tous
-les tests que vous avez écrits. La merge-t-on en production ?
+Cette fonction compile. Elle passe les tests.
 
 ```ts
-// src/discount.ts
 export function applyDiscount(price: number, code: string | undefined): number {
-  if (code === "PROMO10") {
-    return price * 0.9;
-  }
-  if (code === "PROMO50") {
-    return price * 0.5;
-  }
+  if (code === "PROMO10") return price * 0.9;
+  if (code === "PROMO50") return price * 0.5;
   return price;
 }
 ```
 
-Un relecteur attentif remarquera en quelques secondes des choses que
-l'auteur ne voit plus :
+**La merge-t-on en production ?**
 
-- `price` peut être négatif, ou même `NaN` — `NaN * 0.9` reste `NaN` ;
-- deux codes magic strings éparpillés — le jour où on ajoute `PROMO20`, il
-  faudra retrouver cet endroit ;
-- la logique métier (le pourcentage de remise) est mélangée à la logique
-  d'application du code ;
-- aucun test pour les cas limites (code inconnu, code vide, prix à 0) ;
-- le nom de la fonction ne dit pas ce qui se passe si `code` est invalide.
+---
 
-**C'est exactement le rôle de la revue de code : rattraper ce que l'auteur ne
-voit plus, avant que le code n'atteigne la production.**
+## 1. Ce qu'un relecteur voit immédiatement
+
+- `price` peut être négatif… ou `NaN` — `NaN * 0.9` reste `NaN`
+- deux codes magiques éparpillés — et `PROMO20`, il faudra le retrouver où ?
+- logique métier mélangée à la logique d'application du code
+- aucun test pour les cas limites (code inconnu, prix à 0…)
+- le nom de la fonction ne dit rien si `code` est invalide
+
+> **La revue rattrape ce que l'auteur ne voit plus, avant que le code n'atteigne la production.**
 
 ---
 
 ## 2. Qu'est-ce qu'une revue de code ?
 
-> **Définition.** La revue de code (*code review*) est la lecture systématique
-> d'un code source par une ou plusieurs personnes, **avant** qu'il ne soit
-> intégré à la branche principale (et donc livré aux utilisateurs).
+> **Définition** — Lecture systématique d'un code source par une ou plusieurs personnes, **avant** son intégration à la branche principale.
 
-C'est une pratique aussi vieille que l'industrie du logiciel : dès les années
-1970, Michael Fagan (IBM) formalise l'**inspection de code**, un processus
-structuré où une équipe relit ligne à ligne un module et consigne chaque
-défaut trouvé. Ce qui a changé depuis, c'est la forme — mais pas le fond :
-**un code non relu est un code dont personne ne connaît vraiment la qualité.**
+Une pratique aussi vieille que l'industrie :
+Michael Fagan formalise l'**inspection de code** chez IBM dès 1976.
 
-### Les formes de revue
+Ce qui a changé depuis : la forme. Pas le fond —
 
-| Forme | Qui relit ? | Quand ? | Où ? |
-|-------|-------------|---------|------|
-| **Auto-revue** (*self-review*) | L'auteur lui-même | Avant de soumettre | Sur le *diff* local ou la PR |
-| **Revue par un pair** (*peer review*) | Un ou plusieurs collègues | Avant le merge | Pull request (GitHub, GitLab, Bitbucket) |
-| **Revue croisée** | Deux auteurs se relisent mutuellement | Avant le merge | Pull request |
-| **Programmation en binôme** (*pair programming*) | Deux personnes sur le même code | Pendant l'écriture | Un seul écran |
-| **Inspection formelle** | Réunion dédiée, rôles définis | Avant une livraison majeure | Réunion (rare, coûteuse) |
-
-Dans ce cours, on se concentre sur les deux formes les plus utilisées dans
-l'industrie aujourd'hui : **l'auto-revue** et la **revue par un pair via les
-pull requests**. C'est aussi, très concrètement, ce que vous ferez en TD.
+> **Un code non relu est un code dont personne ne connaît la qualité.**
 
 ---
 
-## 3. Pourquoi c'est important — les chiffres
+## 2. Les formes de revue
 
-On pourrait croire que la revue de code est une formalité bureaucratique.
-Les données disent le contraire.
+| Forme | Qui relit ? | Quand ? |
+|-------|-------------|---------|
+| **Auto-revue** | l'auteur lui-même | avant de soumettre |
+| **Revue par un pair** | un ou des collègues | avant le merge |
+| **Revue croisée** | deux auteurs se relisent | avant le merge |
+| **Binômage** (*pair programming*) | deux personnes, même code | pendant l'écriture |
+| **Inspection formelle** | réunion dédiée, rôles définis | avant une livraison majeure |
 
-### Les bugs coûtent cher — et d'autant plus qu'on les découvre tard
-
-C'est le résultat le plus cité de l'ingénierie logicielle (Boehm & Basili,
-*Software Defect Reduction Top 10 List*) :
-
-> Corriger un problème logiciel **après livraison** peut coûter de **10 à
-> 100 fois plus cher** que de le corriger pendant le développement.
-
-Un bug trouvé en revue coûte quelques minutes à corriger. Le même bug trouvé
-en production coûte : une investigation, un correctif d'urgence, une
-re-publication, des utilisateurs mécontents — et parfois une nuit entière.
-Aux États-Unis, le coût annuel de la mauvaise qualité logicielle est estimé à
-plus de **2 000 milliards de dollars** (Consortium for IT Software Quality,
-2022). Une part significative de cette somme est due à des défauts qui
-auraient pu être détectés avant la livraison.
-
-### La revue détecte réellement les défauts
-
-- Dans les années 1970-80, les inspections d'IBM et de la NASA montrent des
-  taux de détection de défauts de **60 à 75 %** — une revue méthodique attrape
-  la majorité des problèmes avant la livraison.
-- En 2006, une étude de Cisco portant sur 3 500 revues de code constate que
-  **60 à 70 % des défauts** sont trouvés par les revues de code.
-- En 2015, une étude interne de Google sur 9 millions de revues de code
-  confirme que la revue est un **filtre de qualité efficace et rapide** :
-  les revues de moins de 200-400 lignes modifiées sont relues plus vite et
-  plus soigneusement.
-
-Bien sûr, la revue n'attrape pas tout — aucun processus ne le fait. Mais
-c'est le **meilleur rapport coût / efficacité** dont dispose l'industrie pour
-la qualité.
-
-### Le cas TypeScript : le compilateur ne suffit pas
-
-Un langage typé comme TypeScript attrape déjà beaucoup de choses à la
-compilation :
-
-```ts
-function formatPrice(price: number): string {
-  return price.toFixed(2); // ok si price est un number
-}
-```
-
-Mais le compilateur ne sait pas *pourquoi* ce code existe, ni ce qu'il est
-*censé* faire. Il ne détectera jamais :
-
-- une logique métier incorrecte (remise appliquée au mauvais endroit) ;
-- un oubli (cas limite non traité, paramètre jamais utilisé) ;
-- un problème de sécurité (donnée utilisateur injectée dans une requête) ;
-- un code illisible qui sera un cauchemar à maintenir dans 6 mois.
-
-La revue de code est le **complément humain du compilateur** : elle vérifie
-ce que la machine ne peut pas vérifier — l'intention, la pertinence, la
-clarté.
+Dans ce cours : **auto-revue** et **revue par un pair via pull requests**.
+C'est ce que vous ferez en TD.
 
 ---
 
-## 4. Les bénéfices concrets
+## 3. Les chiffres — les bugs coûtent cher
 
-Au-delà de la chasse aux bugs, la revue de code apporte six bénéfices
-structurants pour une équipe.
+> Corriger un problème logiciel **après livraison** coûte de **10 à 100 fois plus cher** que pendant le développement.
+> — Boehm & Basili, *Software Defect Reduction Top 10 List* (2001)
 
-### 1. Moins de bugs en production
-C'est le bénéfice immédiat : les défauts sont détectés à la source, quand ils
-sont les moins chers à corriger.
+- un bug trouvé en revue : quelques minutes à corriger ;
+- le même bug en production : investigation, correctif d'urgence, re-publication, utilisateurs mécontents.
 
-### 2. Partage de connaissance
-Chaque revue est un moment où deux personnes comprennent le même morceau de
-code. Résultat : plus personne ne possède « son » code en solo, le savoir
-circule, et l'équipe ne s'arrête pas si un membre part. C'est ce qu'on appelle
-le **bus factor** : le nombre de personnes qu'il faudrait « perdre » pour
-bloquer le projet. La revue le réduit.
-
-### 3. Propriété collective du code
-Si chacun relit tout, chacun se sent responsable de tout. On n'hésite plus à
-corriger un bug dans le code d'un collègue, et personne ne « défend » un
-morceau de code comme son jardin privé.
-
-### 4. Une barre de qualité commune
-Nommage, conventions, structure des dossiers, style… La revue fait respecter
-les conventions de l'équipe *par* l'équipe, sans avoir besoin d'un
-« gardien du temple ». C'est de la documentation vivante : la meilleure façon
-d'apprendre les conventions du projet, c'est de les voir appliquées et
-commentées dans les PR.
-
-### 5. Sécurité
-Une paire d'yeux supplémentaire détecte les classiques : mots de passe ou
-clés API commités, entrées utilisateur non validées, dépendances dangereuses,
-accès trop larges. Nous verrons une checklist dédiée au Module 6.
-
-### 6. Amélioration des compétences
-Relire du code, c'est lire du code écrit par d'autres — donc découvrir
-d'autres façons de résoudre le même problème. Les études internes Google le
-confirment : les développeurs qui relisent beaucoup deviennent plus vite
-meilleurs. L'auteur apprend (feedback sur son code), le relecteur apprend
-(nouvelles techniques), et l'équipe apprend (connaissances partagées).
+Aux États-Unis : plus de **2 000 milliards de dollars** par an
+(CPSQ, 2022).
 
 ---
 
-## 5. Se relire soi-même : l'auto-revue
+## 3. Les chiffres — la revue détecte les défauts
 
-Avant de soumettre son code aux autres, il faut le soumettre… à soi-même.
-C'est l'étape la plus simple à mettre en place et celle qui fait gagner le
-plus de temps à tout le monde.
+- **IBM / NASA (1970-80)** : inspections → **60-75 %** des défauts détectés
+- **Cisco (2006)**, 3 500 revues : **60-70 %** des défauts trouvés en revue
+- **Google (2018)**, 9 M de revues : les PR de **moins de 200-400 lignes** sont relues plus vite et plus soigneusement
 
-### Pourquoi c'est différent de relire le code d'un autre
-
-Quand on vient d'écrire un morceau de code, on est victime d'un **biais de
-l'auteur** : on voit ce qu'on a *voulu* écrire, pas ce qu'on a *réellement*
-écrit. Le cerveau comble automatiquement les coquilles, saute les branches
-évidentes, et oublie que le lecteur ne sait pas ce qu'on sait.
-
-> **Règle d'or de l'auto-revue :** se relire en prenant le point de vue de
-> quelqu'un qui ne connaît pas le code. Un relecteur extérieur ne peut pas
-> lire dans vos pensées — il ne lit que ce qui est écrit.
-
-### La technique : relire le diff, pas le fichier
-
-L'erreur classique est de se relire « dans l'éditeur », où tout le contexte
-est visible. La bonne pratique est de relire le **diff** — les lignes
-ajoutées/supprimées telles qu'elles apparaîtront dans la pull request — car
-c'est exactement ce que verront vos collègues.
-
-Une auto-revue efficace, en pratique :
-
-1. **Relire le diff avant de créer la PR**, ligne par ligne, à voix haute
-   pour ralentir la lecture ;
-2. **Vérifier chaque modification** : est-ce que chaque ligne ajoutée est
-   nécessaire ? Chaque ligne supprimée est-elle vraiment inutile ?
-3. **Relire les tests** : est-ce que les tests testent vraiment le
-   comportement, ou juste l'implémentation ?
-4. **S'exécuter soi-même les cas limites** : que se passe-t-il si l'entrée
-   est vide, nulle, énorme, inattendue ?
-5. **Vérifier son propre code à l'aide des outils** : linter, compilateur,
-   formatage — avant de faire perdre du temps aux autres avec des détails
-   mécaniques.
-
-### L'auto-revue en TypeScript — les 5 réflexes
-
-1. **Le typage est-il honnête ?** `string` là où on pourrait mettre un type
-   plus précis ? `any` utilisé comme échappatoire ?
-   ```ts
-   // À éviter : any fait perdre toute la valeur de TypeScript
-   function getTotal(items: any): any {
-     return items.reduce((acc, item) => acc + item.price, 0);
-   }
-   // Mieux : types explicites
-   interface Item { price: number }
-   function getTotal(items: Item[]): number {
-     return items.reduce((acc, item) => acc + item.price, 0);
-   }
-   ```
-2. **Les cas `null`/`undefined` sont-ils traités ?** (voir Module 5)
-3. **Les erreurs sont-elles gérées ?** Un `try/catch` silencieux est pire que
-   pas de `try/catch` du tout.
-4. **Le code est-il lisible hors de son contexte ?** Les noms veulent-ils
-   dire quelque chose pour quelqu'un qui arrive sur le projet ?
-5. **Y a-t-il des tests pour les cas limites ?** Pas seulement le chemin
-   heureux.
+La revue n'attrape pas tout.
+Mais c'est le **meilleur rapport coût / efficacité** pour la qualité.
 
 ---
 
-## 6. Relire en équipe : la revue par les pairs
+## 4. Les vérifications automatiques ne suffisent pas
 
-L'auto-revue a une limite structurelle : **l'auteur ne peut pas se relire
-vraiment** — il connaît trop bien le code. C'est pour cela que la revue en
-équipe existe : une paire d'yeux *fraîche* voit ce que l'auteur ne voit plus.
+Compilateurs et linters attrapent beaucoup d'erreurs —
+mais ils ne savent pas *pourquoi* le code existe, ni ce qu'il est *censé* faire :
 
-### Le principe fondamental : une revue, deux perspectives
+- logique métier incorrecte ;
+- oubli (cas limite non traité, paramètre inutilisé) ;
+- problème de sécurité (donnée utilisateur injectée) ;
+- code illisible, cauchemar à maintenir dans 6 mois.
 
-- **L'auteur** connaît l'intention, le contexte, les contraintes — mais est
-  aveugle à ses propres erreurs.
-- **Le relecteur** ignore tout du contexte — mais voit précisément ce qui est
-  écrit, les incohérences, les cas oubliés.
+> **La revue est le complément humain des outils automatiques** : elle vérifie ce que la machine ne peut pas vérifier — l'intention, la pertinence, la clarté.
 
-La revue de code est la rencontre de ces deux perspectives. C'est un acte de
-**collaboration**, pas un examen : le but n'est pas de « prendre en faute »
-l'auteur, mais d'améliorer le code ensemble. Les meilleures équipes le vivent
-ainsi — c'est une conversation technique, pas un jugement.
+*(En TD, nous utiliserons TypeScript — ses pièges spécifiques seront vus au Module 5.)*
 
-### Les rôles dans le workflow GitHub
+---
+
+## 5. Six bénéfices
+
+1. **Moins de bugs** en production — détectés à la source
+2. **Partage de connaissance** — réduit le *bus factor*
+3. **Propriété collective** — chacun se sent responsable de tout
+4. **Barre de qualité commune** — conventions respectées *par* l'équipe
+5. **Sécurité** — une paire d'yeux supplémentaire
+6. **Compétences** — relire, c'est apprendre (des autres et de soi)
+
+---
+
+## 6. L'auto-revue — le biais de l'auteur
+
+On voit ce qu'on a *voulu* écrire, pas ce qu'on a *réellement* écrit.
+
+Le cerveau comble les coquilles, saute les branches évidentes,
+et oublie que le lecteur ne sait pas ce qu'on sait.
+
+> **Règle d'or** — Se relire en prenant le point de vue de quelqu'un qui ne connaît pas le code.
+
+---
+
+## 6. L'auto-revue — la technique
+
+1. Relire le **diff**, pas le fichier — c'est exactement ce que verront les collègues
+2. Chaque ligne ajoutée est-elle nécessaire ? Chaque suppression justifiée ?
+3. Les tests testent le **comportement**, pas l'implémentation ?
+4. S'exécuter les cas limites : vide, nul, énorme, inattendu ?
+5. Linter, compilateur, formateur — **avant** de faire perdre du temps aux autres
+
+---
+
+## 6. L'auto-revue — 5 réflexes (indépendants du langage)
+
+1. Les **entrées** sont-elles validées ? (valeurs négatives, vides, extrêmes)
+2. Les **erreurs** sont-elles gérées ? (pas d'échec silencieux)
+3. Le code est-il lisible **hors de son contexte** ?
+4. Les **tests** couvrent-ils les cas limites, pas seulement le chemin heureux ?
+5. Les **noms** disent-ils l'intention, pas l'implémentation ?
+
+---
+
+## 7. La revue en équipe
+
+Deux perspectives, une rencontre :
+
+| | L'auteur | Le relecteur |
+|---|---|---|
+| Connaît | l'intention, le contexte | ce qui est écrit |
+| Est aveugle à | ses propres erreurs | … rien : regard neuf |
+
+> **La revue est une collaboration, pas un examen.**
+> Une conversation technique, pas un jugement.
+
+---
+
+## 7. Les rôles dans le workflow GitHub
 
 | Rôle | Action |
 |------|--------|
-| **Auteur** | Crée la PR, décrit ce qu'il a fait et pourquoi, répond aux commentaires |
-| **Relecteur** (*reviewer*) | Lit le diff, commente, approuve ou demande des modifications |
-| **Intégrateur** (*maintainer*) | Merge la PR quand les conditions sont réunies (revue faite, tests verts) |
-
-### Le cycle de base d'une PR (aperçu — détaillé au Module 2)
-
-```
-1. Auteur :  branche feature  ──►  commit  ──►  push  ──►  pull request
-2. CI :      les tests tournent automatiquement (GitHub Actions)
-3. Relecteur :  lit le diff, laisse des commentaires en ligne
-4. Auteur :  corrige (nouveaux commits sur la même branche)
-5. Relecteur :  approuve  (Approve)  ou  demande des changements  (Request changes)
-6. Intégrateur :  merge la PR ──►  le code entre dans la branche principale
-```
-
-### La revue croisée : la formule des TD
-
-Ce cours utilise la **revue croisée** : deux étudiants échangent leurs PR et
-se relisent mutuellement, en jouant tour à tour les rôles d'auteur et de
-relecteur. C'est la meilleure façon d'apprendre : vous vivrez les deux côtés
-de la conversation, et vous relirez du code écrit par des gens qui, comme
-vous, débutent — ce qui rend les défauts plus faciles à repérer que dans du
-code professionnel parfaitement propre.
+| **Auteur** | crée la PR, décrit quoi et pourquoi, répond aux commentaires |
+| **Relecteur** (*reviewer*) | lit le diff, commente, approuve ou demande des modifications |
+| **Intégrateur** (*maintainer*) | merge quand les conditions sont réunies |
 
 ---
 
-## 7. Le vocabulaire à connaître
+## 7. Le cycle de base d'une PR
+
+```
+1. branche feature ──► commit ──► push ──► pull request
+2. CI : tests automatiques (GitHub Actions)
+3. le relecteur commente en ligne
+4. l'auteur corrige (nouveaux commits)
+5. approbation  —  ou  demande de modifications
+6. merge ──► le code entre dans la branche principale
+```
+
+Détail du workflow complet : **Module 2**.
+
+---
+
+## 8. Le vocabulaire à connaître
 
 | Terme | Définition |
 |-------|------------|
-| **PR** (pull request) | Demande d'intégration d'une branche dans une autre, accompagnée d'une description et d'une discussion |
-| **Diff** | Ensemble des lignes ajoutées/supprimées entre deux versions d'un fichier |
-| **Reviewer** | Personne qui relit la PR |
-| **Inline comment** | Commentaire posé sur une ligne précise du diff |
-| **Approve** | Validation de la PR par le relecteur |
-| **Request changes** | Refus temporaire : des modifications sont demandées |
-| **Merge** | Intégration de la branche dans la branche principale |
-| **CI** (intégration continue) | Exécution automatique des tests à chaque push |
-| **Checklist de revue** | Liste de points à vérifier systématiquement |
+| **PR** | demande d'intégration d'une branche, avec description et discussion |
+| **Diff** | lignes ajoutées / supprimées entre deux versions |
+| **Reviewer** | personne qui relit la PR |
+| **Inline comment** | commentaire posé sur une ligne du diff |
+| **Approve** | validation de la PR |
+| **Request changes** | modifications demandées |
+| **Merge** | intégration dans la branche principale |
+| **CI** | tests exécutés automatiquement à chaque push |
 
 ---
 
-## 8. Les attitudes d'un bon relecteur
+## 9. Les attitudes d'un bon relecteur — 1/2
 
-La revue de code est une pratique technique **et** une pratique sociale. Voici
-les attitudes qui font un bon relecteur — et que les TD noteront explicitement :
-
-1. **Commenter le code, pas la personne.**
-   Dire « cette boucle est inefficace » et non « tu écris des boucles
-   inefficaces ». On critique le travail, jamais l'auteur.
-
-2. **Expliquer le pourquoi.**
-   Un commentaire du type « renommer `x` en `totalPrice` » explique ce qu'il
-   faut faire ; un commentaire « `x` est ambigu car il peut désigner le prix
-   HT ou TTC » explique *pourquoi* il faut le faire. C'est le second qui est
-   utile.
-
-3. **Suggérer, ne pas imposer.**
-   La revue propose ; l'auteur décide. Formulations : « On pourrait… »,
-   « As-tu envisagé… ? », « Qu'en penses-tu si on… ? ».
-
-4. **Dire aussi ce qui est bien.**
-   Une revue uniquement négative est démoralisante et fausse : elle laisse
-   croire que tout le code est mauvais. Souligner une bonne idée, un nom bien
-   choisi, un test malin — c'est aussi de l'information.
-
-5. **Se concentrer sur l'essentiel.**
-   Une PR de 50 lignes avec 40 commentaires de style décourage tout le monde.
-   Prioriser : d'abord les bugs et la logique, ensuite le design, enfin le
-   style (le style se règle de toute façon par le linter).
-
-6. **Respecter le temps de l'autre.**
-   Ne pas bloquer une PR pendant des jours, répondre aux commentaires,
-   relire rapidement : une revue qui traîne vaut presque une revue qui
-   n'existe pas.
-
-7. **Rester humble.**
-   Le relecteur peut se tromper. La revue est une discussion, pas un
-   jugement dernier. Savoir écrire « je me trompe peut-être, mais… » fait
-   partie de la compétence.
+1. **Commenter le code, pas la personne**
+   — « cette boucle est inefficace », pas « tu écris des boucles inefficaces »
+2. **Expliquer le pourquoi**
+   — « `x` est ambigu : prix HT ou TTC ? » plutôt que « renomme `x` »
+3. **Suggérer, ne pas imposer**
+   — « On pourrait… », « As-tu envisagé… ? »
+4. **Dire aussi ce qui est bien**
+   — un nom bien choisi, un test malin : c'est aussi de l'information
 
 ---
 
-## 9. Questions de compréhension
+## 9. Les attitudes d'un bon relecteur — 2/2
 
-1. Expliquez en une phrase pourquoi le compilateur TypeScript ne rend pas la
-   revue de code inutile. Donnez deux catégories de problèmes qu'il ne peut
-   pas détecter.
-2. Citez trois bénéfices de la revue de code autres que la réduction des
-   bugs, et expliquez chacun en une phrase.
-3. Quelle est la limite structurelle de l'auto-revue ? En quoi la revue par
-   un pair la compense-t-elle ?
-4. Pourquoi relit-on un *diff* plutôt que le fichier complet quand on fait
-   une auto-revue ?
-5. Dans l'exemple `applyDiscount` du début de ce module, listez au moins
-   trois problèmes qu'un relecteur pourrait signaler.
+5. **Se concentrer sur l'essentiel**
+   — d'abord les bugs, puis le design, enfin le style (le linter s'en charge)
+6. **Respecter le temps de l'autre**
+   — une revue qui traîne vaut presque une revue qui n'existe pas
+7. **Rester humble**
+   — « je me trompe peut-être, mais… » fait partie de la compétence
+
+---
+
+## 10. Questions de compréhension — 1/2
+
+1. Pourquoi les vérifications automatiques (compilateur, linter) ne
+   rendent-elles pas la revue inutile ? Deux catégories de problèmes
+   qu'elles ne détectent pas ?
+2. Citez trois bénéfices autres que la réduction des bugs.
+3. Quelle est la limite structurelle de l'auto-revue ?
+4. Pourquoi relire un *diff* plutôt que le fichier complet ?
+
+---
+
+## 10. Questions de compréhension — 2/2
+
+5. Dans `applyDiscount`, listez au moins trois problèmes pour un relecteur.
 6. Classez ces commentaires du plus au moins constructif, en justifiant :
-   - « `x` c'est nul comme nom » ;
-   - « Le nom `priceAfterTax` serait plus clair, car `price` peut être HT ou
-     TTC selon l'appelant » ;
-   - « Le calcul de la remise devrait être isolé dans sa propre fonction pour
-     être testable indépendamment ».
-7. Expliquez le principe de la revue croisée et pourquoi elle est adaptée à
-   un contexte d'apprentissage.
+   - « `x` c'est nul comme nom »
+   - « `priceAfterTax` serait plus clair : `price` peut être HT ou TTC »
+   - « Le calcul de la remise devrait être isolé pour être testable »
+7. Expliquez la revue croisée et pourquoi elle est adaptée à l'apprentissage.
 
 ---
 
-## 10. Pour aller plus loin
+## Pour aller plus loin
 
-- **Module 2** : le workflow complet de la revue sur GitHub (branches,
-  protection, merge).
-- **Module 3** : la checklist « que chercher dans une revue » — dans l'ordre
-  de priorité.
-- **Module 5** : les pièges TypeScript les plus fréquents à traquer en revue
-  (`null`/`undefined`, `any`, `async/await`, gestion d'erreurs).
+- **Module 2** — le workflow complet de la revue sur GitHub
+- **Module 3** — que chercher dans une revue (dans l'ordre de priorité)
+- **Module 5** — les pièges TypeScript à traquer en revue
 
-Références utiles :
-
-- Boehm & Basili, *Software Defect Reduction Top 10 List* (2001).
-- SmartBear, *Best Kept Secrets of Peer Code Review* (étude Cisco, 2006).
-- Sadowski, Söderberg, Church, Sipko, Bacchelli, *Modern Code Review: A Case
-  Study at Google* (2018).
-- Fagan, *Design and Code Inspections to Reduce Errors in Program
-  Development* (1976).
+Références : Boehm & Basili (2001) · SmartBear/Cisco (2006) ·
+Google (2018) · Fagan (1976)

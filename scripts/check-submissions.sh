@@ -11,7 +11,7 @@
 set -euo pipefail
 
 REPO="${1:-IUT-BUT3-2026/revues-de-code}"
-BASE="${2:-master}"
+BASE="${2:-main}"
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "Erreur : le GitHub CLI 'gh' est requis (brew install gh)." >&2

@@ -79,7 +79,7 @@ github.com → le fork du groupe → onglet **Pull requests** → **New pull
 request** :
 
 - **base :** la branche principale du dépôt du cours
-  (`IUT-BUT3-2026/revues-de-code`, branche `master`)
+  (`IUT-BUT3-2026/revues-de-code`, branche `main`)
 - **compare :** `2026-IUT-BUT3-DUPONT-td1` (depuis le fork du groupe)
 - **titre :** `2026-IUT-BUT3-DUPONT — TD1 — revue de cart.ts`
 - **corps :** compléter le modèle fourni automatiquement
