@@ -15,19 +15,19 @@
 ## 1. Identification de l'équipe
 
 - **Préfixe :** `<année>-<etablissement>-<groupe>` — ex. `2026-IUT-BUT3-DUPONT`
-  - `année` = année universitaire (ex. `2026`)
-  - `etablissement` = établissement et promotion (ex. `IUT-BUT3`)
-  - `groupe` = nom de famille du porteur, **sans accent, en majuscules**
-    (ex. `DUPONT`, `LEFEVRE`, `MARTIN-GARCIA`)
+    - `année` = année universitaire (ex. `2026`)
+    - `etablissement` = établissement et promotion (ex. `IUT-BUT3`)
+    - `groupe` = nom de famille du porteur, **sans accent, en majuscules**
+      (ex. `DUPONT`, `LEFEVRE`, `MARTIN-GARCIA`)
 - **Porteur de l'équipe :** (nom + pseudo GitHub)
 
 ## 2. Étudiants de l'équipe
 
-| Nom (état civil) | Pseudo GitHub | Rôle |
-|------------------|---------------|------|
-|                  |               | porteur |
-|                  |               | membre |
-|                  |               | membre |
+| Nom (état civil)       | Pseudo GitHub           | Rôle    |
+| ---------------------- | ----------------------- | ------- |
+| Liam VALTY             | LiamTheCreat0r          | porteur |
+| Mathis COULLOCH        | contactmcoulloch-collab | membre  |
+| Mateo CHICANO-QUERALTA | MateoChicano            | membre  |
 
 ## 3. Rendu
 
@@ -37,7 +37,7 @@
 ## 4. Note — réservée à l'enseignant
 
 | Étudiant | Note /20 | Remarques |
-|----------|----------|-----------|
+| -------- | -------- | --------- |
 |          |          |           |
 |          |          |           |
 |          |          |           |
