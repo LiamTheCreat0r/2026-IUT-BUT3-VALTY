@@ -15,13 +15,13 @@ const prisma = new PrismaClient();
 export type Channel = "email" | "sms" | "push";
 export type ProductStat = "active" | "out_of_stock" | "deprecated";
 
-export interface Notification {
+export interface Notification { //Les attributs sont renommes pour une meilleure clarte
     id: string;
     recipient: string;
     subject: string;
     body: string;
     channel: Channel;
-    sentAt: Date;
+    sendingDate: Date;
     productId?: string;
 }
 
@@ -100,12 +100,12 @@ export class Product {
     qty: number;
     stk: number;
     wh: Warehouse | null;
-    stat: PrdStat;
+    stat: ProductStat;
     createdAt: Date;
     updatedAt: Date;
     notifs: Notification[] = [];
     validUntil: Date | null = null;
-    nextStat: PrdStat | undefined;
+    nextStat: ProductStat | undefined;
     dscSnapshot: string[] | undefined;
 
     constructor(
@@ -319,7 +319,7 @@ export class Product {
 
         if (this.stk === 0) {
             this.nextStat = "out_of_stock";
-            this.stat = this.nextStat as PrdStat;
+            this.stat = this.nextStat as ProductStat;
         }
 
         await prisma.product.update({
@@ -384,12 +384,12 @@ export class Product {
     private mkNotif(rcp: string, sbj: string, bd: string): Notification {
         return {
             id: crypto.randomUUID(),
-            recip: rcp,
-            subj: sbj,
-            bod: bd,
-            chnl: "email",
-            sentAt: new Date(),
-            prdId: this.id,
+            recipient: rcp,
+            subject: sbj,
+            body: bd,
+            channel: "email",
+            sendingDate: new Date(),
+            productId: this.id,
         };
     }
 }
