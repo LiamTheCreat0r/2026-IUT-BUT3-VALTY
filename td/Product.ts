@@ -38,7 +38,7 @@ export class Warehouse {
     constructor(
         public id: string,
         public name: string,
-        public addr: string,
+        public address: string,
         public region: string,
     ) {}
 }
