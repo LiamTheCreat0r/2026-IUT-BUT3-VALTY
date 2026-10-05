@@ -317,7 +317,7 @@ describe("Price.getResellerPrice()", () => {
 describe("Product.getResellerPrice()", () => {
     it("matches the same margin/VAT formula as Price", () => {
         const product = makeTypedProduct();
-        product.price.mgn = 10;
+        product.price.margin = 10;
         product.price.vat = 20;
 
         expect(product.getResellerPrice()).toBe(
