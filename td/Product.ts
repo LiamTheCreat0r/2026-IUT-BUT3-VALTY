@@ -90,11 +90,11 @@ export class Price {
 export class Product {
     id: string;
     name: string;
-    slg: string;
+    slug: string;
     price: Price;
     dscs: string[];
     imgs: Record<string, string>; // key = context ("thumbnail", "hero", ...), value = url
-    splrRgns: Map<string, Supplier>; // key = region
+    suppliersRegions: Map<string, Supplier>; // key = region
     wgt: number;
     dims: string;
     qty: number;
@@ -111,11 +111,11 @@ export class Product {
     constructor(
         id: string,
         name: string,
-        slg: string,
+        slug: string,
         price: Price,
         dscs: string[],
         imgs: Record<string, string>,
-        splrRgns: Map<string, Supplier>,
+        suppliersRegions: Map<string, Supplier>,
         wgt: number,
         dims: string,
         qty: number,
@@ -124,11 +124,11 @@ export class Product {
     ) {
         this.id = id;
         this.name = name;
-        this.slg = slg;
+        this.slug = slug;
         this.price = price;
         this.dscs = dscs;
         this.imgs = imgs;
-        this.splrRgns = splrRgns;
+        this.suppliersRegions = suppliersRegions;
         this.wgt = wgt;
         this.dims = dims;
         this.qty = qty;
@@ -168,7 +168,7 @@ export class Product {
             if (url.substring(0, 4) === "http") {
                 if (!(this.imgs[ctx] === undefined)) {
                     let k = ctx;
-                    for (const [, s] of this.splrRgns) {
+                    for (const [, s] of this.suppliersRegions) {
                         if (s.region) {
                             if (s.email) {
                                 if (
@@ -267,7 +267,7 @@ export class Product {
         const s = splrs.find((x) => x.region === region);
         if (!s) throw new Error(`No supplier found for region ${region}`);
 
-        this.splrRgns.set(region, s);
+        this.suppliersRegions.set(region, s);
         this.updatedAt = new Date();
 
         await prisma.productSupplier.upsert({
@@ -332,7 +332,7 @@ export class Product {
         });
 
         // Notify all regional suppliers
-        for (const [region, s] of this.splrRgns) {
+        for (const [region, s] of this.suppliersRegions) {
             this.notifs.push(
                 this.mkNotif(
                     s.email,
@@ -360,7 +360,7 @@ export class Product {
         });
 
         // Notify all regional suppliers
-        for (const [, s] of this.splrRgns) {
+        for (const [, s] of this.suppliersRegions) {
             this.notifs.push(
                 this.mkNotif(
                     s.email,
