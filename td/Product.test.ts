@@ -329,14 +329,14 @@ describe("Product.getResellerPrice()", () => {
 describe("getDisplayLabel()", () => {
     it("prefixes discontinued products", () => {
         const product = makeTypedProduct();
-        product.stat = "deprecated";
+        product.status = "deprecated";
 
         expect(product.getDisplayLabel()).toBe("[DISCONTINUED] Wireless Mouse");
     });
 
     it("prefixes out-of-stock products", () => {
         const product = makeTypedProduct();
-        product.stk = 0;
+        product.stock = 0;
 
         expect(product.getDisplayLabel()).toBe("[OUT OF STOCK] Wireless Mouse");
     });
@@ -351,12 +351,17 @@ describe("getDisplayLabel()", () => {
 describe("receiveStock()", () => {
     it("increases both stock and quantity by the received amount", async () => {
         const product = makeTypedProduct();
-        product.wh = new Warehouse("w1", "Main Depot", "1 Dock Rd", "EU");
+        product.warehouse = new Warehouse(
+            "w1",
+            "Main Depot",
+            "1 Dock Rd",
+            "EU",
+        );
 
         await product.receiveStock(20);
 
-        expect(product.stk).toBe(120);
-        expect(product.qty).toBe(120);
+        expect(product.stock).toBe(120);
+        expect(product.quantity).toBe(120);
     });
 });
 
@@ -366,7 +371,7 @@ describe("sell()", () => {
 
         await product.sell(30);
 
-        expect(product.stk).toBe(70);
+        expect(product.stock).toBe(70);
     });
 
     it("flips status to out_of_stock when the last unit is sold", async () => {
@@ -374,15 +379,15 @@ describe("sell()", () => {
 
         await product.sell(100);
 
-        expect(product.stk).toBe(0);
-        expect(product.stat).toBe("out_of_stock");
+        expect(product.stock).toBe(0);
+        expect(product.status).toBe("out_of_stock");
     });
 
     it("throws when selling more than the available stock", async () => {
         const product = makeTypedProduct();
 
         await expect(product.sell(101)).rejects.toThrow("Not enough stock");
-        expect(product.stk).toBe(100);
+        expect(product.stock).toBe(100);
     });
 
     it("pushes one notification per regional supplier", async () => {
@@ -398,7 +403,7 @@ describe("sell()", () => {
 
         await product.sell(1);
 
-        expect(product.notifs.length).toBe(2);
+        expect(product.notifications.length).toBe(2);
     });
 });
 
@@ -408,8 +413,8 @@ describe("deprecate()", () => {
 
         await product.deprecate();
 
-        expect(product.stat).toBe("deprecated");
-        expect(product.stk).toBe(0);
+        expect(product.status).toBe("deprecated");
+        expect(product.stock).toBe(0);
     });
 
     it("notifies every regional supplier plus a customer-facing notification", async () => {
@@ -422,7 +427,7 @@ describe("deprecate()", () => {
         await product.deprecate();
 
         // 1 supplier notification + 1 customer notification
-        expect(product.notifs.length).toBe(2);
+        expect(product.notifications.length).toBe(2);
     });
 });
 
@@ -433,7 +438,7 @@ describe("addDiscount()", () => {
 
         await product.addDiscount("SUMMER20", validUntil);
 
-        expect(product.dscs).toEqual(["WELCOME10", "SUMMER20"]);
+        expect(product.discounts).toEqual(["WELCOME10", "SUMMER20"]);
     });
 
     it("throws when adding a 3rd discount", async () => {
@@ -444,7 +449,7 @@ describe("addDiscount()", () => {
         await expect(product.addDiscount("FALL30", validUntil)).rejects.toThrow(
             "Cannot have more than 2 discounts at the same time",
         );
-        expect(product.dscs).toEqual(["WELCOME10", "SUMMER20"]);
+        expect(product.discounts).toEqual(["WELCOME10", "SUMMER20"]);
     });
 
     it("throws when validUntil is in the past", async () => {
@@ -482,7 +487,7 @@ describe("addImage()", () => {
 
         await product.addImage("hero", "http://img/hero.png");
 
-        expect(product.imgs.hero).toBe("http://img/hero.png");
+        expect(product.images.hero).toBe("http://img/hero.png");
     });
 
     it("rejects a url that doesn't start with http", async () => {
@@ -503,8 +508,8 @@ describe("addImage()", () => {
 
         await product.addImage("hero", "http://img/hero-v2.png");
 
-        expect(product.imgs["hero-Acme Corp"]).toBe("http://img/hero-v2.png");
-        expect(product.imgs["hero"]).toBe("http://img/hero-v1.png");
+        expect(product.images["hero-Acme Corp"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero"]).toBe("http://img/hero-v1.png");
     });
 
     it("falls back to a generic '-supplier' suffix when the supplier has no email", async () => {
@@ -517,12 +522,17 @@ describe("addImage()", () => {
 
         await product.addImage("hero", "http://img/hero-v2.png");
 
-        expect(product.imgs["hero-supplier"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero-supplier"]).toBe("http://img/hero-v2.png");
     });
 
     it("falls back to the warehouse name when the supplier has an empty region and a warehouse is set", async () => {
         const product = makeTypedProduct();
-        product.wh = new Warehouse("w1", "Main Depot", "1 Dock Rd", "EU");
+        product.warehouse = new Warehouse(
+            "w1",
+            "Main Depot",
+            "1 Dock Rd",
+            "EU",
+        );
         product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", ""),
@@ -531,7 +541,9 @@ describe("addImage()", () => {
 
         await product.addImage("hero", "http://img/hero-v2.png");
 
-        expect(product.imgs["hero-Main Depot"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero-Main Depot"]).toBe(
+            "http://img/hero-v2.png",
+        );
     });
 
     it("falls back to the plain context key when the supplier has an empty region and no warehouse is set", async () => {
@@ -544,7 +556,7 @@ describe("addImage()", () => {
 
         await product.addImage("hero", "http://img/hero-v2.png");
 
-        expect(product.imgs["hero"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero"]).toBe("http://img/hero-v2.png");
     });
 
     it("falls back to the plain context key when the supplier has no region at all", async () => {
@@ -559,12 +571,17 @@ describe("addImage()", () => {
         await product.addImage("hero", "http://img/hero-v2.png");
 
         // No warehouse set, so falls back to plain context key
-        expect(product.imgs["hero"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero"]).toBe("http://img/hero-v2.png");
     });
 
     it("falls back to warehouse name when supplier has no region and warehouse is set", async () => {
         const product = makeTypedProduct();
-        product.wh = new Warehouse("w1", "Central Hub", "1 Hub St", "UK");
+        product.warehouse = new Warehouse(
+            "w1",
+            "Central Hub",
+            "1 Hub St",
+            "UK",
+        );
         // Supplier with no/empty region
         product.suppliersRegions.set(
             "key1",
@@ -575,7 +592,9 @@ describe("addImage()", () => {
         await product.addImage("hero", "http://img/hero-v2.png");
 
         // With warehouse set, should append warehouse name instead of plain context
-        expect(product.imgs["hero-Central Hub"]).toBe("http://img/hero-v2.png");
+        expect(product.images["hero-Central Hub"]).toBe(
+            "http://img/hero-v2.png",
+        );
     });
 
     it("throws when a regional supplier has a malformed email", async () => {
