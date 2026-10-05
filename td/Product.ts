@@ -12,17 +12,17 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export type Chnl = "email" | "sms" | "push";
-export type PrdStat = "active" | "out_of_stock" | "deprecated";
+export type Channel = "email" | "sms" | "push";
+export type ProductStat = "active" | "out_of_stock" | "deprecated";
 
 export interface Notification {
     id: string;
-    recip: string;
-    subj: string;
-    bod: string;
-    chnl: Chnl;
+    recipient: string;
+    subject: string;
+    body: string;
+    channel: Channel;
     sentAt: Date;
-    prdId?: string;
+    productId?: string;
 }
 
 export class Supplier {
