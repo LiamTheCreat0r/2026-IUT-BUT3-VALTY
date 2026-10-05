@@ -18,9 +18,9 @@ export type PrdStat = "active" | "out_of_stock" | "deprecated";
 export interface Notification {
     id: string;
     recip: string;
-    subj: string;
-    bod: string;
-    chnl: Chnl;
+    subject: string;
+    body: string;
+    channel: Chnl;
     sentAt: Date;
     prdId?: string;
 }
@@ -381,13 +381,13 @@ export class Product {
     }
 
     // small helper to cut down repetition in notif building
-    private mkNotif(rcp: string, sbj: string, bd: string): Notification {
+    private mkNotif(rcp: string, subject: string, bd: string): Notification {
         return {
             id: crypto.randomUUID(),
             recip: rcp,
-            subj: sbj,
-            bod: bd,
-            chnl: "email",
+            subject: subject,
+            body: bd,
+            channel: "email",
             sentAt: new Date(),
             prdId: this.id,
         };
