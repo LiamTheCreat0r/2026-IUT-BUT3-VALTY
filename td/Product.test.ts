@@ -306,7 +306,7 @@ function makeTypedProduct() {
 describe("Price.getResellerPrice()", () => {
     it("adds margin then VAT on top of the margin only", () => {
         const price = new Price(100, "EUR");
-        price.mgn = 10;
+        price.margin = 10;
         price.vat = 20;
 
         // margin = 10, vat on margin = 2 -> 100 + 10 + 2
