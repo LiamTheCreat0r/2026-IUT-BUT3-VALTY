@@ -159,61 +159,62 @@ export class Product {
         url: string,
         overwrite: boolean = true,
     ): Promise<void> {
-        if (url) {
-            if (url.substring(0, 4) === "http") {
-                if (!(this.images[context] === undefined)) {
-                    let k = context;
-                    for (const [, s] of this.suppliersRegions) {
-                        if (s.region) {
-                            if (s.email) {
-                                if (
-                                    s.email.indexOf("@") > 0 &&
-                                    s.email.indexOf(".", s.email.indexOf("@")) >
-                                    s.email.indexOf("@")
-                                ) {
-                                    k = context + "-" + s.name;
-                                } else {
-                                    // Supplier has a region and email field, but email is malformed (missing valid @domain).
-                                    // Treat as a data integrity error: throw instead of gracefully degrading.
-                                    throw new Error(
-                                        `Supplier ${s.name} has a malformed email: ${s.email}`,
-                                    );
-                                }
-                            } else {
-                                // Supplier has a region but NO email field (empty string, falsy).
-                                // Fall back to generic "-supplier" marker, losing the supplier's identity.
-                                k = context + "-supplier";
-                            }
-                        } else {
-                            // Supplier has NO region at all (empty string, null, undefined).
-                            // Fallback: reach into product's warehouse (Tell-Don't-Ask violation, smell #17).
-                            // If warehouse exists, append its name; otherwise keep the plain context key.
-                            k = this.warehouse
-                                ? context + "-" + this.warehouse.name
-                                : context;
-                        }
-                    }
-                    this.images[k] = url;
-                } else {
-                    this.images[context] = url;
-                }
-                this.updatedAt = new Date();
-                await prisma.product.update({
-                    where: { id: this.id },
-                    data: {
-                        images: this.images as Prisma.InputJsonValue,
-                        updatedAt: this.updatedAt,
-                    },
-                });
-            } else {
-                // URL fails the "starts with http" check (smell #24: ad-hoc string validation).
-                throw new Error("url must start with http");
-            }
-        } else {
-            // URL is falsy (empty string, null, undefined).
-            // Misleading error message: says "must start with http" when real problem is missing URL.
+        if (!url) {
             throw new Error("missing url");
         }
+
+        if (url.substring(0, 4) !== "http") {
+            throw new Error("url must start with http");
+        }
+
+        let key = context;
+
+        if (this.images[context] !== undefined) {
+            key = this.getImageKey(context);
+        }
+
+        this.images[key] = url;
+        this.updatedAt = new Date();
+
+        await prisma.product.update({
+            where: { id: this.id },
+            data: {
+                images: this.images as Prisma.InputJsonValue,
+                updatedAt: this.updatedAt,
+            },
+        });
+    }
+
+    private getImageKey(context: string): string {
+        let key = context;
+
+        for (const [, supplier] of this.suppliersRegions) {
+            if (!supplier.region) {
+                key = this.warehouse
+                    ? `${context}-${this.warehouse.name}`
+                    : context;
+                continue;
+            }
+
+            if (!supplier.email) {
+                key = `${context}-supplier`;
+                continue;
+            }
+
+            const atIndex = supplier.email.indexOf("@");
+            const dotIndex = supplier.email.indexOf(".", atIndex);
+
+            if (atIndex > 0 && dotIndex > atIndex) {
+                key = `${context}-${supplier.name}`;
+                continue;
+            }
+
+            throw new Error(
+                `Supplier ${supplier.name} has a malformed email: ${supplier.email}`,
+            );
+        }
+
+        return key;
     }
 
     getValidUntil(): Date | null {
@@ -230,23 +231,23 @@ export class Product {
                 if (validUntil < new Date()) {
                     throw new Error("validUntil cannot be in the past");
                 }
-                    if (this.discounts.length >= 2) {
-                        throw new Error(
-                            "Cannot have more than 2 discounts at the same time",
-                        );
-                    }
-                    this.discounts.push(dscCode);
-                    this.setValidUntil(validUntil);
-                    this.updatedAt = new Date();
-                    await prisma.product.update({
-                        where: { id: this.id },
-                        data: {
-                            discounts: this.discounts   ,
-                            updatedAt: this.updatedAt,
-                        },
-                    });
+                if (this.discounts.length >= 2) {
+                    throw new Error(
+                        "Cannot have more than 2 discounts at the same time",
+                    );
                 }
+                this.discounts.push(dscCode);
+                this.setValidUntil(validUntil);
+                this.updatedAt = new Date();
+                await prisma.product.update({
+                    where: { id: this.id },
+                    data: {
+                        discounts: this.discounts,
+                        updatedAt: this.updatedAt,
+                    },
+                });
             }
+        }
     }
     // --- Suppliers ---
 
