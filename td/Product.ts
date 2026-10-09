@@ -159,67 +159,84 @@ export class Product {
     // --- Catalog / images / discounts ---
 
     async addImage(
-        context: string,
-        url: string,
-        overwrite: boolean = true,
-    ): Promise<void> {
-        if (!url) {
-            throw new Error("missing url");
-        }
-
-        if (url.substring(0, 4) !== "http") {
-            throw new Error("url must start with http");
-        }
-
-        let key = context;
-
-        if (this.images[context] !== undefined) {
-            key = this.getImageKey(context);
-        }
-
-        this.images[key] = url;
-        this.updatedAt = new Date();
-
-        await prisma.product.update({
-            where: { id: this.id },
-            data: {
-                images: this.images as Prisma.InputJsonValue,
-                updatedAt: this.updatedAt,
-            },
-        });
+    context: string,
+    url: string,
+    overwrite: boolean = true,
+): Promise<void> {
+    //Vérifier que l'URL de l'image est renseignée
+    if (!url) {
+        throw new Error("missing url");
     }
 
-    private getImageKey(context: string): string {
-        let key = context;
+    //Vérifier que l'URL commence par http
+    if (url.substring(0, 4) !== "http") {
+        throw new Error("url must start with http");
+    }
 
-        for (const [, supplier] of this.suppliersRegions) {
-            if (!supplier.region) {
-                key = this.warehouse
-                    ? `${context}-${this.warehouse.name}`
-                    : context;
-                continue;
-            }
+    //Utiliser le contexte comme clé par défaut pour l'image
+    let key = context;
 
-            if (!supplier.email) {
-                key = `${context}-supplier`;
-                continue;
-            }
+    //Si une image existe déjà pour ce contexte, déterminer une nouvelle clé
+    if (this.images[context] !== undefined) {
+        key = this.getImageKey(context);
+    }
 
-            const atIndex = supplier.email.indexOf("@");
-            const dotIndex = supplier.email.indexOf(".", atIndex);
+    //Ajouter ou remplacer l'image associée à la clé
+    this.images[key] = url;
 
-            if (atIndex > 0 && dotIndex > atIndex) {
-                key = `${context}-${supplier.name}`;
-                continue;
-            }
+    //Enregistrer la date de dernière mise à jour du produit
+    this.updatedAt = new Date();
 
-            throw new Error(
-                `Supplier ${supplier.name} has a malformed email: ${supplier.email}`,
-            );
+    //Mettre à jour les images et la date de modification en base de données
+    await prisma.product.update({
+        where: { id: this.id },
+        data: {
+            images: this.images as Prisma.InputJsonValue,
+            updatedAt: this.updatedAt,
+        },
+    });
+}
+
+private getImageKey(context: string): string {
+    //Utiliser le contexte comme clé par défaut
+    let key = context;
+
+    //Parcourir les fournisseurs et leurs régions
+    for (const [, supplier] of this.suppliersRegions) {
+        //Si le fournisseur n'a pas de région, utiliser le nom de l'entrepôt s'il existe
+        if (!supplier.region) {
+            key = this.warehouse
+                ? `${context}-${this.warehouse.name}`
+                : context;
+            continue;
         }
 
-        return key;
+        //Si le fournisseur n'a pas d'adresse e-mail, ajouter le suffixe supplier
+        if (!supplier.email) {
+            key = `${context}-supplier`;
+            continue;
+        }
+
+        //Repérer la position du caractère @ et du point qui le suit dans l'adresse e-mail
+        const atIndex = supplier.email.indexOf("@");
+        const dotIndex = supplier.email.indexOf(".", atIndex);
+
+        //Si l'adresse e-mail semble correctement formée, utiliser le nom du fournisseur
+        if (atIndex > 0 && dotIndex > atIndex) {
+            key = `${context}-${supplier.name}`;
+            continue;
+        }
+
+        //Signaler une erreur si l'adresse e-mail du fournisseur est mal formée
+        throw new Error(
+            `Supplier ${supplier.name} has a malformed email: ${supplier.email}`,
+        );
     }
+
+    //Retourner la clé déterminée pour l'image
+    return key;
+}
+
 
     getValidUntil(): Date | null {
         return this.validUntil;
