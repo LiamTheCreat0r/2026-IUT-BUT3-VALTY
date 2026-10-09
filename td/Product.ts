@@ -90,20 +90,20 @@ export class Price {
 export class Product {
     id: string;
     name: string;
-    slg: string;
+    slug: string;
     price: Price;
-    dscs: string[];
-    imgs: Record<string, string>; // key = context ("thumbnail", "hero", ...), value = url
-    splrRgns: Map<string, Supplier>; // key = region
-    wgt: number;
-    dims: string;
-    qty: number;
-    stk: number;
-    wh: Warehouse | null;
-    stat: PrdStat;
+    discounts: string[];
+    images: Record<string, string>; // key = context ("thumbnail", "hero", ...), value = url
+    suppliersRegions: Map<string, Supplier>; // key = region
+    weight: number;
+    dimensions: string;
+    quantity: number;
+    stock: number;
+    warehouse: Warehouse | null;
+    status: PrdStat;
     createdAt: Date;
     updatedAt: Date;
-    notifs: Notification[] = [];
+    notifications: Notification[] = [];
     validUntil: Date | null = null;
     nextStat: PrdStat | undefined;
     dscSnapshot: string[] | undefined;
@@ -111,43 +111,43 @@ export class Product {
     constructor(
         id: string,
         name: string,
-        slg: string,
+        slug: string,
         price: Price,
-        dscs: string[],
-        imgs: Record<string, string>,
-        splrRgns: Map<string, Supplier>,
-        wgt: number,
-        dims: string,
-        qty: number,
-        stk: number,
-        wh: Warehouse | null,
+        discounts: string[],
+        images: Record<string, string>,
+        suppliersRegions: Map<string, Supplier>,
+        weight: number,
+        dimensions: string,
+        quantity: number,
+        stock: number,
+        warehouse: Warehouse | null,
     ) {
         this.id = id;
         this.name = name;
-        this.slg = slg;
+        this.slug = slug;
         this.price = price;
-        this.dscs = dscs;
-        this.imgs = imgs;
-        this.splrRgns = splrRgns;
-        this.wgt = wgt;
-        this.dims = dims;
-        this.qty = qty;
-        this.stk = stk;
-        this.wh = wh;
-        this.stat = "active";
+        this.discounts = discounts;
+        this.images = images;
+        this.suppliersRegions = suppliersRegions;
+        this.weight = weight;
+        this.dimensions = dimensions;
+        this.quantity = quantity;
+        this.stock = stock;
+        this.warehouse = warehouse;
+        this.status = "active";
         this.createdAt = new Date();
         this.updatedAt = new Date();
     }
 
     getDisplayLabel(): string {
         let label: string;
-        if (this.stat === "deprecated") {
+        if (this.status === "deprecated") {
             label = `[DISCONTINUED] ${this.name}`;
         } else {
-            if (this.stk === 0) {
+            if (this.stock === 0) {
                 label = `[OUT OF STOCK] ${this.name}`;
             } else {
-                if (this.stat === "active") {
+                if (this.status === "active") {
                     label = this.name;
                 } else {
                     label = this.name;
@@ -166,9 +166,9 @@ export class Product {
     ): Promise<void> {
         if (url) {
             if (url.substring(0, 4) === "http") {
-                if (!(this.imgs[ctx] === undefined)) {
+                if (!(this.images[ctx] === undefined)) {
                     let k = ctx;
-                    for (const [, s] of this.splrRgns) {
+                    for (const [, s] of this.suppliersRegions) {
                         if (s.region) {
                             if (s.email) {
                                 if (
@@ -193,18 +193,20 @@ export class Product {
                             // Supplier has NO region at all (empty string, null, undefined).
                             // Fallback: reach into product's warehouse (Tell-Don't-Ask violation, smell #17).
                             // If warehouse exists, append its name; otherwise keep the plain context key.
-                            k = this.wh ? ctx + "-" + this.wh.name : ctx;
+                            k = this.warehouse
+                                ? ctx + "-" + this.warehouse.name
+                                : ctx;
                         }
                     }
-                    this.imgs[k] = url;
+                    this.images[k] = url;
                 } else {
-                    this.imgs[ctx] = url;
+                    this.images[ctx] = url;
                 }
                 this.updatedAt = new Date();
                 await prisma.product.update({
                     where: { id: this.id },
                     data: {
-                        images: this.imgs as Prisma.InputJsonValue,
+                        images: this.images as Prisma.InputJsonValue,
                         updatedAt: this.updatedAt,
                     },
                 });
@@ -228,25 +230,25 @@ export class Product {
     }
 
     async addDiscount(dscCode: string, validUntil: Date): Promise<void> {
-        if (this.dscs) {
+        if (this.discounts) {
             if (dscCode) {
                 if (validUntil) {
                     if (validUntil < new Date()) {
                         throw new Error("validUntil cannot be in the past");
                     } else {
-                        if (this.dscs.length <= 2) {
-                            if (this.dscs.length === 2) {
+                        if (this.discounts.length <= 2) {
+                            if (this.discounts.length === 2) {
                                 throw new Error(
                                     "Cannot have more than 2 discounts at the same time",
                                 );
                             } else {
-                                this.dscs.push(dscCode);
+                                this.discounts.push(dscCode);
                                 this.setValidUntil(validUntil);
                                 this.updatedAt = new Date();
                                 prisma.product.update({
                                     where: { id: this.id },
                                     data: {
-                                        discounts: this.dscs,
+                                        discounts: this.discounts,
                                         updatedAt: this.updatedAt,
                                     },
                                 });
@@ -267,7 +269,7 @@ export class Product {
         const s = splrs.find((x) => x.region === region);
         if (!s) throw new Error(`No supplier found for region ${region}`);
 
-        this.splrRgns.set(region, s);
+        this.suppliersRegions.set(region, s);
         this.updatedAt = new Date();
 
         await prisma.productSupplier.upsert({
@@ -296,48 +298,48 @@ export class Product {
 
     // --- Stock ---
 
-    async receiveStock(qty: number): Promise<void> {
-        this.stk += qty;
-        this.qty += qty;
+    async receiveStock(quantity: number): Promise<void> {
+        this.stock += quantity;
+        this.quantity += quantity;
         this.updatedAt = new Date();
-        console.log(`Restocking ${this.name} at ${this.wh!.name}`);
+        console.log(`Restocking ${this.name} at ${this.warehouse!.name}`);
         await prisma.product.update({
             where: { id: this.id },
             data: {
-                stock: this.stk,
-                quantity: this.qty,
+                stock: this.stock,
+                quantity: this.quantity,
                 updatedAt: this.updatedAt,
             },
         });
     }
 
-    async sell(qty: number): Promise<void> {
-        if (this.stk < qty) throw new Error("Not enough stock");
+    async sell(quantity: number): Promise<void> {
+        if (this.stock < quantity) throw new Error("Not enough stock");
 
-        this.stk -= qty;
+        this.stock -= quantity;
         this.updatedAt = new Date();
 
-        if (this.stk === 0) {
+        if (this.stock === 0) {
             this.nextStat = "out_of_stock";
-            this.stat = this.nextStat as PrdStat;
+            this.status = this.nextStat as PrdStat;
         }
 
         await prisma.product.update({
             where: { id: this.id },
             data: {
-                stock: this.stk,
-                status: this.stat,
+                stock: this.stock,
+                status: this.status,
                 updatedAt: this.updatedAt,
             },
         });
 
         // Notify all regional suppliers
-        for (const [region, s] of this.splrRgns) {
-            this.notifs.push(
+        for (const [region, s] of this.suppliersRegions) {
+            this.notifications.push(
                 this.mkNotif(
                     s.email,
                     `Product sold: ${this.name}`,
-                    `${qty} unit(s) of ${this.name} were sold. Remaining stock: ${this.stk}.`,
+                    `${quantity} unit(s) of ${this.name} were sold. Remaining stock: ${this.stock}.`,
                 ),
             );
         }
@@ -346,22 +348,22 @@ export class Product {
     // --- Lifecycle ---
 
     async deprecate(): Promise<void> {
-        this.stat = "deprecated";
-        this.stk = 0;
+        this.status = "deprecated";
+        this.stock = 0;
         this.updatedAt = new Date();
 
         await prisma.product.update({
             where: { id: this.id },
             data: {
-                status: this.stat,
-                stock: this.stk,
+                status: this.status,
+                stock: this.stock,
                 updatedAt: this.updatedAt,
             },
         });
 
         // Notify all regional suppliers
-        for (const [, s] of this.splrRgns) {
-            this.notifs.push(
+        for (const [, s] of this.suppliersRegions) {
+            this.notifications.push(
                 this.mkNotif(
                     s.email,
                     `Product deprecated: ${this.name}`,
@@ -371,7 +373,7 @@ export class Product {
         }
 
         // Notify customers
-        this.notifs.push(
+        this.notifications.push(
             this.mkNotif(
                 "customers@omniproduct.com",
                 `Product no longer available: ${this.name}`,
