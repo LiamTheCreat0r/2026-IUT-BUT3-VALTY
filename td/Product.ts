@@ -141,19 +141,14 @@ export class Product {
 
     getDisplayLabel(): string {
         let label: string;
+        label = this.name;
         if (this.status === "deprecated") {
             label = `[DISCONTINUED] ${this.name}`;
-        } else {
-            if (this.stock === 0) {
-                label = `[OUT OF STOCK] ${this.name}`;
-            } else {
-                if (this.status === "active") {
-                    label = this.name;
-                } else {
-                    label = this.name;
-                }
-            }
         }
+        if (this.stock === 0) {
+            label = `[OUT OF STOCK] ${this.name}`;
+        } 
+        
         return label;
     }
 
