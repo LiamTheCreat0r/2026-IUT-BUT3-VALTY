@@ -28,68 +28,68 @@ export interface Notification {
 export class Supplier {
     constructor(
         public id: string,
-        public nm: string,
-        public eml: string,
-        public rgn: string,
+        public name: string,
+        public email: string,
+        public region: string,
     ) {}
 }
 
 export class Warehouse {
     constructor(
         public id: string,
-        public nm: string,
-        public addr: string,
-        public rgn: string,
+        public name: string,
+        public address: string,
+        public region: string,
     ) {}
 }
 
 export class Price {
-    amt: number;
-    ccy: string;
-    mgn: number; // percentage
+    amount: number;
+    currency: string;
+    margin: number; // percentage
     vat: number; // percentage, applied on margin only
 
-    constructor(amt: number, ccy: string) {
-        this.amt = amt;
-        this.ccy = ccy;
-        this.mgn = 15;
+    constructor(amount: number, currency: string) {
+        this.amount = amount;
+        this.currency = currency;
+        this.margin = 15;
         this.vat = 20;
     }
 
     getResellerPrice(): number {
-        const mgnAmt = (this.amt * this.mgn) / 100;
-        const vatAmt = (mgnAmt * this.vat) / 100;
-        return this.amt + mgnAmt + vatAmt;
+        const marginamount = (this.amount * this.margin) / 100;
+        const vatamount = (marginamount * this.vat) / 100;
+        return this.amount + marginamount + vatamount;
     }
 
-    getAmt(): number {
-        return this.amt;
+    getamount(): number {
+        return this.amount;
     }
 
-    setAmt(amt: number): void {
-        this.amt = amt;
+    setamount(amount: number): void {
+        this.amount = amount;
     }
 
-    getCcy(): string {
-        return this.ccy;
+    getcurrency(): string {
+        return this.currency;
     }
 
-    setCcy(ccy: string): void {
-        this.ccy = ccy;
+    setcurrency(currency: string): void {
+        this.currency = currency;
     }
 
-    getMgn(): number {
-        return this.mgn;
+    getmargin(): number {
+        return this.margin;
     }
 
-    setMgn(mgn: number): void {
-        this.mgn = mgn;
+    setmargin(margin: number): void {
+        this.margin = margin;
     }
 }
 
 export class Product {
     id: string;
-    nm: string;
+    name: string;
     slg: string;
     price: Price;
     dscs: string[];
@@ -110,7 +110,7 @@ export class Product {
 
     constructor(
         id: string,
-        nm: string,
+        name: string,
         slg: string,
         price: Price,
         dscs: string[],
@@ -123,7 +123,7 @@ export class Product {
         wh: Warehouse | null,
     ) {
         this.id = id;
-        this.nm = nm;
+        this.name = name;
         this.slg = slg;
         this.price = price;
         this.dscs = dscs;
@@ -142,15 +142,15 @@ export class Product {
     getDisplayLabel(): string {
         let label: string;
         if (this.stat === "deprecated") {
-            label = `[DISCONTINUED] ${this.nm}`;
+            label = `[DISCONTINUED] ${this.name}`;
         } else {
             if (this.stk === 0) {
-                label = `[OUT OF STOCK] ${this.nm}`;
+                label = `[OUT OF STOCK] ${this.name}`;
             } else {
                 if (this.stat === "active") {
-                    label = this.nm;
+                    label = this.name;
                 } else {
-                    label = this.nm;
+                    label = this.name;
                 }
             }
         }
@@ -169,19 +169,19 @@ export class Product {
                 if (!(this.imgs[ctx] === undefined)) {
                     let k = ctx;
                     for (const [, s] of this.splrRgns) {
-                        if (s.rgn) {
-                            if (s.eml) {
+                        if (s.region) {
+                            if (s.email) {
                                 if (
-                                    s.eml.indexOf("@") > 0 &&
-                                    s.eml.indexOf(".", s.eml.indexOf("@")) >
-                                        s.eml.indexOf("@")
+                                    s.email.indexOf("@") > 0 &&
+                                    s.email.indexOf(".", s.email.indexOf("@")) >
+                                        s.email.indexOf("@")
                                 ) {
-                                    k = ctx + "-" + s.nm;
+                                    k = ctx + "-" + s.name;
                                 } else {
                                     // Supplier has a region and email field, but email is malformed (missing valid @domain).
                                     // Treat as a data integrity error: throw instead of gracefully degrading.
                                     throw new Error(
-                                        `Supplier ${s.nm} has a malformed email: ${s.eml}`,
+                                        `Supplier ${s.name} has a malformed email: ${s.email}`,
                                     );
                                 }
                             } else {
@@ -193,7 +193,7 @@ export class Product {
                             // Supplier has NO region at all (empty string, null, undefined).
                             // Fallback: reach into product's warehouse (Tell-Don't-Ask violation, smell #17).
                             // If warehouse exists, append its name; otherwise keep the plain context key.
-                            k = this.wh ? ctx + "-" + this.wh.nm : ctx;
+                            k = this.wh ? ctx + "-" + this.wh.name : ctx;
                         }
                     }
                     this.imgs[k] = url;
@@ -260,16 +260,19 @@ export class Product {
 
     // --- Suppliers ---
 
-    async addSupplierToRegion(rgn: string, splrs: Supplier[]): Promise<void> {
-        const s = splrs.find((x) => x.rgn === rgn);
-        if (!s) throw new Error(`No supplier found for region ${rgn}`);
+    async addSupplierToRegion(
+        region: string,
+        splrs: Supplier[],
+    ): Promise<void> {
+        const s = splrs.find((x) => x.region === region);
+        if (!s) throw new Error(`No supplier found for region ${region}`);
 
-        this.splrRgns.set(rgn, s);
+        this.splrRgns.set(region, s);
         this.updatedAt = new Date();
 
         await prisma.productSupplier.upsert({
-            where: { productId_region: { productId: this.id, region: rgn } },
-            create: { productId: this.id, region: rgn, supplierId: s.id },
+            where: { productId_region: { productId: this.id, region: region } },
+            create: { productId: this.id, region: region, supplierId: s.id },
             update: { supplierId: s.id },
         });
     }
@@ -277,17 +280,17 @@ export class Product {
     // --- Pricing ---
 
     getResellerPrice(): number {
-        const mgnAmt = (this.price.amt * this.price.mgn) / 100;
-        const vatAmt = (mgnAmt * this.price.vat) / 100;
-        return this.price.amt + mgnAmt + vatAmt;
+        const marginamount = (this.price.amount * this.price.margin) / 100;
+        const vatamount = (marginamount * this.price.vat) / 100;
+        return this.price.amount + marginamount + vatamount;
     }
 
-    async setMargin(mgnPct: number): Promise<void> {
-        this.price.mgn = mgnPct;
+    async setMargin(marginPct: number): Promise<void> {
+        this.price.margin = marginPct;
         this.updatedAt = new Date();
         await prisma.product.update({
             where: { id: this.id },
-            data: { priceMargin: mgnPct, updatedAt: this.updatedAt },
+            data: { priceMargin: marginPct, updatedAt: this.updatedAt },
         });
     }
 
@@ -297,7 +300,7 @@ export class Product {
         this.stk += qty;
         this.qty += qty;
         this.updatedAt = new Date();
-        console.log(`Restocking ${this.nm} at ${this.wh!.nm}`);
+        console.log(`Restocking ${this.name} at ${this.wh!.name}`);
         await prisma.product.update({
             where: { id: this.id },
             data: {
@@ -329,12 +332,12 @@ export class Product {
         });
 
         // Notify all regional suppliers
-        for (const [rgn, s] of this.splrRgns) {
+        for (const [region, s] of this.splrRgns) {
             this.notifs.push(
                 this.mkNotif(
-                    s.eml,
-                    `Product sold: ${this.nm}`,
-                    `${qty} unit(s) of ${this.nm} were sold. Remaining stock: ${this.stk}.`,
+                    s.email,
+                    `Product sold: ${this.name}`,
+                    `${qty} unit(s) of ${this.name} were sold. Remaining stock: ${this.stk}.`,
                 ),
             );
         }
@@ -360,9 +363,9 @@ export class Product {
         for (const [, s] of this.splrRgns) {
             this.notifs.push(
                 this.mkNotif(
-                    s.eml,
-                    `Product deprecated: ${this.nm}`,
-                    `The product ${this.nm} has been deprecated and removed from the catalog.`,
+                    s.email,
+                    `Product deprecated: ${this.name}`,
+                    `The product ${this.name} has been deprecated and removed from the catalog.`,
                 ),
             );
         }
@@ -371,8 +374,8 @@ export class Product {
         this.notifs.push(
             this.mkNotif(
                 "customers@omniproduct.com",
-                `Product no longer available: ${this.nm}`,
-                `${this.nm} is no longer available.`,
+                `Product no longer available: ${this.name}`,
+                `${this.name} is no longer available.`,
             ),
         );
     }
