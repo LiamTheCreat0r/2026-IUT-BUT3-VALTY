@@ -31,7 +31,7 @@ export class Supplier {
         public name: string,
         public email: string,
         public region: string,
-    ) {}
+    ) { }
 }
 
 export class Warehouse {
@@ -40,7 +40,7 @@ export class Warehouse {
         public name: string,
         public address: string,
         public region: string,
-    ) {}
+    ) { }
 }
 
 export class Price {
@@ -143,16 +143,11 @@ export class Product {
         let label: string;
         if (this.status === "deprecated") {
             label = `[DISCONTINUED] ${this.name}`;
+        }
+        else if (this.stock === 0) {
+            label = `[OUT OF STOCK] ${this.name}`;
         } else {
-            if (this.stock === 0) {
-                label = `[OUT OF STOCK] ${this.name}`;
-            } else {
-                if (this.status === "active") {
-                    label = this.name;
-                } else {
-                    label = this.name;
-                }
-            }
+            label = this.name;
         }
         return label;
     }
@@ -174,7 +169,7 @@ export class Product {
                                 if (
                                     s.email.indexOf("@") > 0 &&
                                     s.email.indexOf(".", s.email.indexOf("@")) >
-                                        s.email.indexOf("@")
+                                    s.email.indexOf("@")
                                 ) {
                                     k = ctx + "-" + s.name;
                                 } else {
