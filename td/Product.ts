@@ -159,83 +159,83 @@ export class Product {
     // --- Catalog / images / discounts ---
 
     async addImage(
-    context: string,
-    url: string,
-    overwrite: boolean = true,
-): Promise<void> {
-    //Vérifier que l'URL de l'image est renseignée
-    if (!url) {
-        throw new Error("missing url");
-    }
-
-    //Vérifier que l'URL commence par http
-    if (url.substring(0, 4) !== "http") {
-        throw new Error("url must start with http");
-    }
-
-    //Utiliser le contexte comme clé par défaut pour l'image
-    let key = context;
-
-    //Si une image existe déjà pour ce contexte, déterminer une nouvelle clé
-    if (this.images[context] !== undefined) {
-        key = this.getImageKey(context);
-    }
-
-    //Ajouter ou remplacer l'image associée à la clé
-    this.images[key] = url;
-
-    //Enregistrer la date de dernière mise à jour du produit
-    this.updatedAt = new Date();
-
-    //Mettre à jour les images et la date de modification en base de données
-    await prisma.product.update({
-        where: { id: this.id },
-        data: {
-            images: this.images as Prisma.InputJsonValue,
-            updatedAt: this.updatedAt,
-        },
-    });
-}
-
-private getImageKey(context: string): string {
-    //Utiliser le contexte comme clé par défaut
-    let key = context;
-
-    //Parcourir les fournisseurs et leurs régions
-    for (const [, supplier] of this.suppliersRegions) {
-        //Si le fournisseur n'a pas de région, utiliser le nom de l'entrepôt s'il existe
-        if (!supplier.region) {
-            key = this.warehouse
-                ? `${context}-${this.warehouse.name}`
-                : context;
-            continue;
+        context: string,
+        url: string,
+        overwrite: boolean = true,
+    ): Promise<void> {
+        //Vérifier que l'URL de l'image est renseignée
+        if (!url) {
+            throw new Error("missing url");
         }
 
-        //Si le fournisseur n'a pas d'adresse e-mail, ajouter le suffixe supplier
-        if (!supplier.email) {
-            key = `${context}-supplier`;
-            continue;
+        //Vérifier que l'URL commence par http
+        if (url.substring(0, 4) !== "http") {
+            throw new Error("url must start with http");
         }
 
-        //Repérer la position du caractère @ et du point qui le suit dans l'adresse e-mail
-        const atIndex = supplier.email.indexOf("@");
-        const dotIndex = supplier.email.indexOf(".", atIndex);
+        //Utiliser le contexte comme clé par défaut pour l'image
+        let key = context;
 
-        //Si l'adresse e-mail semble correctement formée, utiliser le nom du fournisseur
-        if (atIndex > 0 && dotIndex > atIndex) {
-            key = `${context}-${supplier.name}`;
-            continue;
+        //Si une image existe déjà pour ce contexte, déterminer une nouvelle clé
+        if (this.images[context] !== undefined) {
+            key = this.getImageKey(context);
         }
 
-        //Signaler une erreur si l'adresse e-mail du fournisseur est mal formée
-        throw new Error(
-            `Supplier ${supplier.name} has a malformed email: ${supplier.email}`,
-        );
+        //Ajouter ou remplacer l'image associée à la clé
+        this.images[key] = url;
+
+        //Enregistrer la date de dernière mise à jour du produit
+        this.updatedAt = new Date();
+
+        //Mettre à jour les images et la date de modification en base de données
+        await prisma.product.update({
+            where: { id: this.id },
+            data: {
+                images: this.images as Prisma.InputJsonValue,
+                updatedAt: this.updatedAt,
+            },
+        });
     }
 
-    //Retourner la clé déterminée pour l'image
-    return key;
-}
+    private getImageKey(context: string): string {
+        //Utiliser le contexte comme clé par défaut
+        let key = context;
+
+        //Parcourir les fournisseurs et leurs régions
+        for (const [, supplier] of this.suppliersRegions) {
+            //Si le fournisseur n'a pas de région, utiliser le nom de l'entrepôt s'il existe
+            if (!supplier.region) {
+                key = this.warehouse
+                    ? `${context}-${this.warehouse.name}`
+                    : context;
+                continue;
+            }
+
+            //Si le fournisseur n'a pas d'adresse e-mail, ajouter le suffixe supplier
+            if (!supplier.email) {
+                key = `${context}-supplier`;
+                continue;
+            }
+
+            //Repérer la position du caractère @ et du point qui le suit dans l'adresse e-mail
+            const atIndex = supplier.email.indexOf("@");
+            const dotIndex = supplier.email.indexOf(".", atIndex);
+
+            //Si l'adresse e-mail semble correctement formée, utiliser le nom du fournisseur
+            if (atIndex > 0 && dotIndex > atIndex) {
+                key = `${context}-${supplier.name}`;
+                continue;
+            }
+
+            //Signaler une erreur si l'adresse e-mail du fournisseur est mal formée
+            throw new Error(
+                `Supplier ${supplier.name} has a malformed email: ${supplier.email}`,
+            );
+        }
+
+        //Retourner la clé déterminée pour l'image
+        return key;
+    }
 
 
     getValidUntil(): Date | null {
@@ -247,42 +247,42 @@ private getImageKey(context: string): string {
     }
 
     async addDiscount(dscCode: string, validUntil: Date): Promise<void> {
-    //Vérifier que la liste des réductions existe
-    if (this.discounts) {
-        //Vérifier que le code de réduction et la date de validité sont renseignés
-        if (dscCode && validUntil) {
-            //Refuser la réduction si sa date de validité est déjà passée
-            if (validUntil < new Date()) {
-                throw new Error("validUntil cannot be in the past");
+        //Vérifier que la liste des réductions existe
+        if (this.discounts) {
+            //Vérifier que le code de réduction et la date de validité sont renseignés
+            if (dscCode && validUntil) {
+                //Refuser la réduction si sa date de validité est déjà passée
+                if (validUntil < new Date()) {
+                    throw new Error("validUntil cannot be in the past");
+                }
+
+                //Refuser l'ajout si le produit possède déjà deux réductions
+                if (this.discounts.length >= 2) {
+                    throw new Error(
+                        "Cannot have more than 2 discounts at the same time",
+                    );
+                }
+
+                //Ajouter le code de réduction à la liste des réductions
+                this.discounts.push(dscCode);
+
+                //Mettre à jour la date de validité des réductions
+                this.setValidUntil(validUntil);
+
+                //Enregistrer la date de dernière mise à jour du produit
+                this.updatedAt = new Date();
+
+                //Mettre à jour les réductions et la date de modification en base de données
+                await prisma.product.update({
+                    where: { id: this.id },
+                    data: {
+                        discounts: this.discounts,
+                        updatedAt: this.updatedAt,
+                    },
+                });
             }
-
-            //Refuser l'ajout si le produit possède déjà deux réductions
-            if (this.discounts.length >= 2) {
-                throw new Error(
-                    "Cannot have more than 2 discounts at the same time",
-                );
-            }
-
-            //Ajouter le code de réduction à la liste des réductions
-            this.discounts.push(dscCode);
-
-            //Mettre à jour la date de validité des réductions
-            this.setValidUntil(validUntil);
-
-            //Enregistrer la date de dernière mise à jour du produit
-            this.updatedAt = new Date();
-
-            //Mettre à jour les réductions et la date de modification en base de données
-            await prisma.product.update({
-                where: { id: this.id },
-                data: {
-                    discounts: this.discounts,
-                    updatedAt: this.updatedAt,
-                },
-            });
         }
     }
-}
 
 
     // --- Suppliers ---
@@ -291,12 +291,19 @@ private getImageKey(context: string): string {
         region: string,
         splrs: Supplier[],
     ): Promise<void> {
+        //Rechercher le fournisseur associé à la région demandée
         const s = splrs.find((x) => x.region === region);
+
+        //Signaler une erreur si aucun fournisseur n'est trouvé pour cette région
         if (!s) throw new Error(`No supplier found for region ${region}`);
 
+        //Associer le fournisseur à la région du produit
         this.suppliersRegions.set(region, s);
+
+        //Enregistrer la date de dernière mise à jour du produit
         this.updatedAt = new Date();
 
+        //Créer ou mettre à jour l'association entre le produit et le fournisseur en base de données
         await prisma.productSupplier.upsert({
             where: { productId_region: { productId: this.id, region: region } },
             create: { productId: this.id, region: region, supplierId: s.id },
@@ -307,14 +314,24 @@ private getImageKey(context: string): string {
     // --- Pricing ---
 
     getResellerPrice(): number {
+        //Calculer le montant de la marge appliquée au prix du produit
         const marginamount = (this.price.amount * this.price.margin) / 100;
+
+        //Calculer le montant de la TVA appliquée à la marge
         const vatamount = (marginamount * this.price.vat) / 100;
+
+        //Retourner le prix de base augmenté de la marge et de la TVA
         return this.price.amount + marginamount + vatamount;
     }
 
     async setMargin(marginPct: number): Promise<void> {
+        //Mettre à jour le pourcentage de marge du produit
         this.price.margin = marginPct;
+
+        //Enregistrer la date de dernière mise à jour du produit
         this.updatedAt = new Date();
+
+        //Mettre à jour la marge et la date de modification en base de données
         await prisma.product.update({
             where: { id: this.id },
             data: { priceMargin: marginPct, updatedAt: this.updatedAt },
@@ -324,10 +341,19 @@ private getImageKey(context: string): string {
     // --- Stock ---
 
     async receiveStock(quantity: number): Promise<void> {
+        //Ajouter la quantité reçue au stock disponible
         this.stock += quantity;
+
+        //Ajouter la quantité reçue à la quantité totale du produit
         this.quantity += quantity;
+
+        //Enregistrer la date de dernière mise à jour du produit
         this.updatedAt = new Date();
+
+        //Afficher un message indiquant le réapprovisionnement du produit et son entrepôt
         console.log(`Restocking ${this.name} at ${this.warehouse!.name}`);
+
+        //Mettre à jour le stock, la quantité totale et la date de modification en base de données
         await prisma.product.update({
             where: { id: this.id },
             data: {
@@ -339,16 +365,22 @@ private getImageKey(context: string): string {
     }
 
     async sell(quantity: number): Promise<void> {
+        //Vérifier que le stock disponible permet de satisfaire la vente
         if (this.stock < quantity) throw new Error("Not enough stock");
 
+        //Déduire la quantité vendue du stock disponible
         this.stock -= quantity;
+
+        //Enregistrer la date de dernière mise à jour du produit
         this.updatedAt = new Date();
 
+        //Mettre à jour le statut du produit s'il ne reste plus de stock
         if (this.stock === 0) {
             this.nextStat = "out_of_stock";
             this.status = this.nextStat as PrdStat;
         }
 
+        //Mettre à jour le stock, le statut et la date de modification en base de données
         await prisma.product.update({
             where: { id: this.id },
             data: {
@@ -358,7 +390,7 @@ private getImageKey(context: string): string {
             },
         });
 
-        // Notify all regional suppliers
+        //Créer une notification pour chaque fournisseur régional
         for (const [region, s] of this.suppliersRegions) {
             this.notifications.push(
                 this.mkNotif(
@@ -373,10 +405,14 @@ private getImageKey(context: string): string {
     // --- Lifecycle ---
 
     async deprecate(): Promise<void> {
+        //Marquer le produit comme retiré et mettre son stock à zéro
         this.status = "deprecated";
         this.stock = 0;
+
+        //Enregistrer la date de dernière mise à jour du produit
         this.updatedAt = new Date();
 
+        //Mettre à jour le statut, le stock et la date de modification en base de données
         await prisma.product.update({
             where: { id: this.id },
             data: {
@@ -386,7 +422,7 @@ private getImageKey(context: string): string {
             },
         });
 
-        // Notify all regional suppliers
+        //Créer une notification pour chaque fournisseur régional
         for (const [, s] of this.suppliersRegions) {
             this.notifications.push(
                 this.mkNotif(
@@ -397,7 +433,7 @@ private getImageKey(context: string): string {
             );
         }
 
-        // Notify customers
+        //Créer une notification destinée aux clients
         this.notifications.push(
             this.mkNotif(
                 "customers@omniproduct.com",
@@ -407,8 +443,9 @@ private getImageKey(context: string): string {
         );
     }
 
-    // small helper to cut down repetition in notif building
+    //Créer une notification à partir du destinataire, de l'objet et du contenu fournis
     private mkNotif(rcp: string, subject: string, bd: string): Notification {
+        //Retourner une notification avec un identifiant unique et ses informations
         return {
             id: crypto.randomUUID(),
             recipient: rcp,
@@ -420,3 +457,4 @@ private getImageKey(context: string): string {
         };
     }
 }
+
