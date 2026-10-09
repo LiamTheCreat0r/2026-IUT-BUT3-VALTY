@@ -238,7 +238,7 @@ export class Product {
                     this.discounts.push(dscCode);
                     this.setValidUntil(validUntil);
                     this.updatedAt = new Date();
-                    prisma.product.update({
+                    await prisma.product.update({
                         where: { id: this.id },
                         data: {
                             discounts: this.discounts   ,
