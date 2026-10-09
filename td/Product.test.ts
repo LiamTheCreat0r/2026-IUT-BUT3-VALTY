@@ -317,7 +317,7 @@ describe("Price.getResellerPrice()", () => {
 describe("Product.getResellerPrice()", () => {
     it("matches the same margin/VAT formula as Price", () => {
         const product = makeTypedProduct();
-        product.price.mgn = 10;
+        product.price.margin = 10;
         product.price.vat = 20;
 
         expect(product.getResellerPrice()).toBe(
@@ -387,11 +387,11 @@ describe("sell()", () => {
 
     it("pushes one notification per regional supplier", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", "EU"),
         );
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "US",
             new Supplier("s2", "Widget Inc", "widget@example.com", "US"),
         );
@@ -414,7 +414,7 @@ describe("deprecate()", () => {
 
     it("notifies every regional supplier plus a customer-facing notification", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", "EU"),
         );
@@ -495,7 +495,7 @@ describe("addImage()", () => {
 
     it("appends the supplier name to the context key when overwriting an existing image", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", "EU"),
         );
@@ -509,7 +509,10 @@ describe("addImage()", () => {
 
     it("falls back to a generic '-supplier' suffix when the supplier has no email", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set("EU", new Supplier("s1", "Acme Corp", "", "EU"));
+        product.suppliersRegions.set(
+            "EU",
+            new Supplier("s1", "Acme Corp", "", "EU"),
+        );
         await product.addImage("hero", "http://img/hero-v1.png");
 
         await product.addImage("hero", "http://img/hero-v2.png");
@@ -520,7 +523,7 @@ describe("addImage()", () => {
     it("falls back to the warehouse name when the supplier has an empty region and a warehouse is set", async () => {
         const product = makeTypedProduct();
         product.wh = new Warehouse("w1", "Main Depot", "1 Dock Rd", "EU");
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", ""),
         );
@@ -533,7 +536,7 @@ describe("addImage()", () => {
 
     it("falls back to the plain context key when the supplier has an empty region and no warehouse is set", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "acme@example.com", ""),
         );
@@ -547,7 +550,7 @@ describe("addImage()", () => {
     it("falls back to the plain context key when the supplier has no region at all", async () => {
         const product = makeTypedProduct();
         // Supplier with falsy region (empty string or would be undefined if constructor allowed it)
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "key1",
             new Supplier("s1", "NoRegion Corp", "noregion@example.com", ""),
         );
@@ -563,7 +566,7 @@ describe("addImage()", () => {
         const product = makeTypedProduct();
         product.wh = new Warehouse("w1", "Central Hub", "1 Hub St", "UK");
         // Supplier with no/empty region
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "key1",
             new Supplier("s1", "NoRegion Corp", "noregion@example.com", ""),
         );
@@ -577,7 +580,7 @@ describe("addImage()", () => {
 
     it("throws when a regional supplier has a malformed email", async () => {
         const product = makeTypedProduct();
-        product.splrRgns.set(
+        product.suppliersRegions.set(
             "EU",
             new Supplier("s1", "Acme Corp", "not-an-email", "EU"),
         );
@@ -603,7 +606,7 @@ describe("addSupplierToRegion()", () => {
 
         await product.addSupplierToRegion("EU", [supplier]);
 
-        expect(product.splrRgns.get("EU")).toBe(supplier);
+        expect(product.suppliersRegions.get("EU")).toBe(supplier);
     });
 
     it("throws when no supplier matches the region", async () => {
