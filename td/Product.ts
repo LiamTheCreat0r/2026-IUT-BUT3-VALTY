@@ -31,7 +31,7 @@ export class Supplier {
         public name: string,
         public email: string,
         public region: string,
-    ) {}
+    ) { }
 }
 
 export class Warehouse {
@@ -40,7 +40,7 @@ export class Warehouse {
         public name: string,
         public address: string,
         public region: string,
-    ) {}
+    ) { }
 }
 
 export class Price {
@@ -141,14 +141,14 @@ export class Product {
 
     getDisplayLabel(): string {
         let label: string;
-        label = this.name;
         if (this.status === "deprecated") {
             label = `[DISCONTINUED] ${this.name}`;
         }
-        if (this.stock === 0) {
+        else if (this.stock === 0) {
             label = `[OUT OF STOCK] ${this.name}`;
-        } 
-        
+        } else {
+            label = this.name;
+        }
         return label;
     }
 
@@ -169,7 +169,7 @@ export class Product {
                                 if (
                                     s.email.indexOf("@") > 0 &&
                                     s.email.indexOf(".", s.email.indexOf("@")) >
-                                        s.email.indexOf("@")
+                                    s.email.indexOf("@")
                                 ) {
                                     k = ctx + "-" + s.name;
                                 } else {
@@ -226,35 +226,28 @@ export class Product {
 
     async addDiscount(dscCode: string, validUntil: Date): Promise<void> {
         if (this.discounts) {
-            if (dscCode) {
-                if (validUntil) {
-                    if (validUntil < new Date()) {
-                        throw new Error("validUntil cannot be in the past");
-                    } else {
-                        if (this.discounts.length <= 2) {
-                            if (this.discounts.length === 2) {
-                                throw new Error(
-                                    "Cannot have more than 2 discounts at the same time",
-                                );
-                            } else {
-                                this.discounts.push(dscCode);
-                                this.setValidUntil(validUntil);
-                                this.updatedAt = new Date();
-                                prisma.product.update({
-                                    where: { id: this.id },
-                                    data: {
-                                        discounts: this.discounts,
-                                        updatedAt: this.updatedAt,
-                                    },
-                                });
-                            }
-                        }
+            if (dscCode && validUntil) {
+                if (validUntil < new Date()) {
+                    throw new Error("validUntil cannot be in the past");
+                }
+                    if (this.discounts.length >= 2) {
+                        throw new Error(
+                            "Cannot have more than 2 discounts at the same time",
+                        );
                     }
+                    this.discounts.push(dscCode);
+                    this.setValidUntil(validUntil);
+                    this.updatedAt = new Date();
+                    prisma.product.update({
+                        where: { id: this.id },
+                        data: {
+                            discounts: this.discounts   ,
+                            updatedAt: this.updatedAt,
+                        },
+                    });
                 }
             }
-        }
     }
-
     // --- Suppliers ---
 
     async addSupplierToRegion(
