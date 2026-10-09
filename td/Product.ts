@@ -155,14 +155,14 @@ export class Product {
     // --- Catalog / images / discounts ---
 
     async addImage(
-        ctx: string,
+        context: string,
         url: string,
         overwrite: boolean = true,
     ): Promise<void> {
         if (url) {
             if (url.substring(0, 4) === "http") {
-                if (!(this.images[ctx] === undefined)) {
-                    let k = ctx;
+                if (!(this.images[context] === undefined)) {
+                    let k = context;
                     for (const [, s] of this.suppliersRegions) {
                         if (s.region) {
                             if (s.email) {
@@ -171,7 +171,7 @@ export class Product {
                                     s.email.indexOf(".", s.email.indexOf("@")) >
                                     s.email.indexOf("@")
                                 ) {
-                                    k = ctx + "-" + s.name;
+                                    k = context + "-" + s.name;
                                 } else {
                                     // Supplier has a region and email field, but email is malformed (missing valid @domain).
                                     // Treat as a data integrity error: throw instead of gracefully degrading.
@@ -182,20 +182,20 @@ export class Product {
                             } else {
                                 // Supplier has a region but NO email field (empty string, falsy).
                                 // Fall back to generic "-supplier" marker, losing the supplier's identity.
-                                k = ctx + "-supplier";
+                                k = context + "-supplier";
                             }
                         } else {
                             // Supplier has NO region at all (empty string, null, undefined).
                             // Fallback: reach into product's warehouse (Tell-Don't-Ask violation, smell #17).
                             // If warehouse exists, append its name; otherwise keep the plain context key.
                             k = this.warehouse
-                                ? ctx + "-" + this.warehouse.name
-                                : ctx;
+                                ? context + "-" + this.warehouse.name
+                                : context;
                         }
                     }
                     this.images[k] = url;
                 } else {
-                    this.images[ctx] = url;
+                    this.images[context] = url;
                 }
                 this.updatedAt = new Date();
                 await prisma.product.update({
@@ -212,7 +212,7 @@ export class Product {
         } else {
             // URL is falsy (empty string, null, undefined).
             // Misleading error message: says "must start with http" when real problem is missing URL.
-            throw new Error("url must start with http");
+            throw new Error("missing url");
         }
     }
 
@@ -238,7 +238,7 @@ export class Product {
                     this.discounts.push(dscCode);
                     this.setValidUntil(validUntil);
                     this.updatedAt = new Date();
-                    prisma.product.update({
+                    await prisma.product.update({
                         where: { id: this.id },
                         data: {
                             discounts: this.discounts   ,
