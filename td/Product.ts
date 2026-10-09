@@ -140,13 +140,17 @@ export class Product {
     }
 
     getDisplayLabel(): string {
+        //Déterminer le label du produit à afficher à côté de son nom
         let label: string;
+        //Si le produit n'est plus en vente, on indique son nom et le fait qu'il n'est plus en circulation
         if (this.status === "deprecated") {
             label = `[DISCONTINUED] ${this.name}`;
         }
+        //Sinon si le produit n'est plus en stock, on indique son nom et le fait qu'il est hors stock
         else if (this.stock === 0) {
             label = `[OUT OF STOCK] ${this.name}`;
         } else {
+            //si le produit est disponible, on affiche juste son nom 
             label = this.name;
         }
         return label;
