@@ -230,29 +230,44 @@ export class Product {
     }
 
     async addDiscount(dscCode: string, validUntil: Date): Promise<void> {
-        if (this.discounts) {
-            if (dscCode && validUntil) {
-                if (validUntil < new Date()) {
-                    throw new Error("validUntil cannot be in the past");
-                }
-                if (this.discounts.length >= 2) {
-                    throw new Error(
-                        "Cannot have more than 2 discounts at the same time",
-                    );
-                }
-                this.discounts.push(dscCode);
-                this.setValidUntil(validUntil);
-                this.updatedAt = new Date();
-                await prisma.product.update({
-                    where: { id: this.id },
-                    data: {
-                        discounts: this.discounts,
-                        updatedAt: this.updatedAt,
-                    },
-                });
+    //Vérifier que la liste des réductions existe
+    if (this.discounts) {
+        //Vérifier que le code de réduction et la date de validité sont renseignés
+        if (dscCode && validUntil) {
+            //Refuser la réduction si sa date de validité est déjà passée
+            if (validUntil < new Date()) {
+                throw new Error("validUntil cannot be in the past");
             }
+
+            //Refuser l'ajout si le produit possède déjà deux réductions
+            if (this.discounts.length >= 2) {
+                throw new Error(
+                    "Cannot have more than 2 discounts at the same time",
+                );
+            }
+
+            //Ajouter le code de réduction à la liste des réductions
+            this.discounts.push(dscCode);
+
+            //Mettre à jour la date de validité des réductions
+            this.setValidUntil(validUntil);
+
+            //Enregistrer la date de dernière mise à jour du produit
+            this.updatedAt = new Date();
+
+            //Mettre à jour les réductions et la date de modification en base de données
+            await prisma.product.update({
+                where: { id: this.id },
+                data: {
+                    discounts: this.discounts,
+                    updatedAt: this.updatedAt,
+                },
+            });
         }
     }
+}
+
+
     // --- Suppliers ---
 
     async addSupplierToRegion(
